@@ -1,13 +1,18 @@
  import db from '../config/database.js'
  import {BlogsType_response_data, response_data} from '../config/config.js'
+ import {PutObject, GetObjects} from '../middleware/S3_bucket.mjs'
+
 
  export const Insert_Blog = (req,res,next)=>{
-  const image = req.file.filename
-  const token = req.headers.authorization;
-//    VerifyToken(token,req,res,next)
-
-    const query = 'INSERT INTO blogs (`title`, `description`, `content`,`image`,`topic_id`,`category_id`,`industry_id`,`status`) VALUES (?,?,?,?,?,?,?,?)'
-    db.query(query,[req.body.title,req.body.description,req.body.content,image,req.body.topic_id,req.body.category_id,req.body.industry_id,req.body.status],(err,result)=>{
+  const image =`image-${Date.now()}${req.file.originalname}`
+   async function Upload_in_s3(){
+   await PutObject(`assets/blog_images/${image}`,req.file.buffer)
+  }
+    if (req.file !== undefined) {
+      Upload_in_s3()
+    }
+    const query = 'INSERT INTO blogs (`title`,`user_id`,`senior_user_id`, `description`, `content`,`image`,`topic_id`,`category_id`,`industry_id`,`status`) VALUES (?,?,?,?,?,?,?,?,?,?)'
+    db.query(query,[req.body.title,req.body.user_id,req.body.senior_user_id,req.body.description,req.body.content,image,req.body.topic_id,req.body.category_id,req.body.industry_id,req.body.status],(err,result)=>{
       if(err){ 
         next(err)
       }else{
@@ -18,18 +23,40 @@
       } 
     })
 } 
-export const Get_Blogs = (req,res,next)=>{
+export const Get_Blogs_By_Senior = (req,res,next)=>{
   let query = ''
-  const status = Number(req.query.status)
   const limit = Number(req.query.limit)
   const offset = Number(req.query.offset)
-  const topic_id = Number(req.query.topic_id)
-  const category_id = Number(req.query.category_id)
-  const industry_id = Number(req.query.industry_id)
-  const token = req.headers.authorization;
-//    VerifyToken(token,req,res,next)
+  const senior_user_id = Number(req.query.senior_user_id)
 
-  if(req.query.status!==undefined){
+  if(req.query.search!==undefined &&req.query.search.length>0){
+    query = `SELECT * FROM blogs WHERE title LIKE "%${req.query.search}%" OR description LIKE "%${req.query.search}%" OR content LIKE "%${req.query.search}%" AND senior_user_id=? ORDER BY id desc LIMIT ? OFFSET ? `
+    db.query(query,[senior_user_id,limit,offset,topic_id,category_id,industry_id],(err,result)=>{
+      if(err){
+        next(err)
+      }else{  
+        res.json(result)
+      }
+    })
+  }else{
+     query = `SELECT * FROM blogs WHERE senior_user_id=? ORDER BY id desc LIMIT ? OFFSET ? `
+     db.query(query,[senior_user_id,limit,offset],(err,result)=>{
+      if(err){
+        next(err)
+      }else{  
+        res.json(result)
+      }
+    })
+  }
+
+}
+export const Get_Blogs = (req,res,next)=>{
+  let query = ''
+  const limit = Number(req.query.limit)
+  const offset = Number(req.query.offset)
+  const user_id = Number(req.query.user_id)
+
+  if(user_id==0){
     query = `SELECT * FROM blogs WHERE title LIKE "%${req.query.search}%" OR description LIKE "%${req.query.search}%" OR content LIKE "%${req.query.search}%" LIMIT ? OFFSET ?`
     db.query(query,[limit,offset],(err,result)=>{
       if(err){
@@ -41,8 +68,8 @@ export const Get_Blogs = (req,res,next)=>{
   }else{
   if(req.query.search!==undefined &&req.query.search.length>0){
     // query = 'SELECT * FROM blogs WHERE title LIKE "%?%" LIMIT ? OFFSET ?'
-    query = `SELECT * FROM blogs WHERE title LIKE "%${req.query.search}%" OR description LIKE "%${req.query.search}%" OR content LIKE "%${req.query.search}%" OR topic_id = ? OR category_id = ? OR industry_id = ? ORDER BY id desc LIMIT ? OFFSET ? `
-    db.query(query,[limit,offset,topic_id,category_id,industry_id],(err,result)=>{
+    query = `SELECT * FROM blogs WHERE title LIKE "%${req.query.search}%" OR description LIKE "%${req.query.search}%" OR content LIKE "%${req.query.search}%" AND user_id=? OR senior_user_id = ? ORDER BY id desc LIMIT ? OFFSET ? `
+    db.query(query,[user_id,user_id,limit,offset],(err,result)=>{
       if(err){
         next(err)
       }else{  
@@ -50,8 +77,8 @@ export const Get_Blogs = (req,res,next)=>{
       }
     })
   }else{
-     query = `SELECT * FROM blogs ORDER BY id desc LIMIT ? OFFSET ? `
-     db.query(query,[limit,offset],(err,result)=>{
+     query = `SELECT * FROM blogs WHERE user_id=? OR senior_user_id = ? ORDER BY id desc LIMIT ? OFFSET ? `
+     db.query(query,[user_id,user_id,limit,offset],(err,result)=>{
       if(err){
         next(err)
       }else{  
@@ -165,7 +192,7 @@ export const Blogs_Filters=async(req,res,next)=>{
   }
 }
 export const Update_Blog = (req,res,next)=>{
-  let image;
+  let image =`image-${Date.now()}${req.file.originalname}`
   const id = req.params.id
   const title = req.body.title
   const description = req.body.description
@@ -173,12 +200,13 @@ export const Update_Blog = (req,res,next)=>{
   const topic_id  = Number(req.body.topic_id)
   const category_id = Number(req.body.category_id)
   const industry_id = Number(req.body.industry_id)
-  const token = req.headers.authorization;
-//    VerifyToken(token,req,res,next)
 
-  if(req.file !=undefined){
-     image = req.file.filename ? req.file.filename:''
-  }
+  // if(req.file !=undefined){
+  //    image = req.file.filename ? req.file.filename:''
+  // } 
+  async function Upload_in_s3(){
+    await PutObject(`assets/blog_images/${image}`,req.file.buffer)
+   }
   
   if(req.file == undefined){
     let query = 'UPDATE blogs SET title = ? , description = ? , content = ? ,topic_id = ?,category_id = ? ,industry_id = ? WHERE id = ?'
@@ -197,12 +225,14 @@ export const Update_Blog = (req,res,next)=>{
         next(error)
     }
   }else{
+
   let query = 'UPDATE blogs SET title = ? , description = ? , content = ?, image = ? ,topic_id = ?,category_id = ? ,industry_id = ? WHERE id = ?'
   try {
     db.query(query,[title,description,content,image,topic_id,category_id,industry_id,id],(err,result)=>{
       if(err){
         next(err)
       }else{
+        Upload_in_s3()
         response_data.message = 'Blog Updated Succesfully'
         response_data.status = true
         response_data.data = ''
@@ -214,16 +244,45 @@ export const Update_Blog = (req,res,next)=>{
   }
 }
 }
+const get_writer = async(user_id,next)=>{
+  return new Promise((resolve, reject) => {
+    let query1 = `SELECT role_id ,username , designation FROM admin_users WHERE id = ?`
+    db.query(query1,[user_id],(err,user_result)=>{
+    if(err){
+      next(err)
+    }else{
+      resolve(user_result[0])
+    }
+   })
+  })
+
+}
+const get_handler = async(senior_user_id,next)=>{
+  return new Promise((resolve, reject) => {
+    let query2 = `SELECT role_id ,username , designation FROM admin_users WHERE id = ?`
+    db.query(query2,[senior_user_id],(err,senior_user_result)=>{
+     if(err){
+       next(err)
+     }
+     resolve(senior_user_result[0])
+    })
+  })
+
+}
 export const Blog_by_Id = (req,res,next)=>{
   const id = Number(req.query.id)
-  const token = req.headers.authorization;
-//    VerifyToken(token,req,res,next)
 
   const query = 'SELECT * FROM blogs WHERE id = ?'
-    db.query(query,[id],(err,result)=>{
+    db.query(query,[id],async(err,result)=>{
       if(err){
         next(err)
       }else{
+        if(result[0].image !==undefined && result[0].image !==null){
+          result[0].image_url = await GetObjects(`assets/blog_images/${result[0].image}`)
+         }
+         
+         result[0].writer = await get_writer(result[0].user_id,next)
+         result[0].handler = await get_handler(result[0].senior_user_id,next)
         response_data.message=''
         response_data.status=true
         response_data.data = result
@@ -240,7 +299,6 @@ db.query(query,(err,result)=>{
   if(err){
     next(err)
   }else{
-
     response_data.message='blog total count'
     response_data.status=true
     response_data.data = result[0].total_count

@@ -4,7 +4,7 @@ dotenv.config()
 const db = mysql
 const pool = db.createPool({
     host:process.env.HOST,
-    user:'admin',
+    user:'root',
     database:process.env.DATABASE,
     password:process.env.PASSWORD,
     port:process.env.DBPORT,

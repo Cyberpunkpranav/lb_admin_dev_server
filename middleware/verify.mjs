@@ -18,22 +18,21 @@ export const verifyToken = (req, res, next) => {
       
     if (err.name === 'TokenExpiredError') {
       // Handle token expiration
-      error_response.data = ''
+      error_response.data = []
       error_response.message = 'Token expired'
       error_response.status = 401
       return res.status(401).json(error_response);
     }
 
     if (err.name === 'JsonWebTokenError') {
-      // Handle other JWT-related errors
-      error_response.data = ''
-      error_response.message = 'Invalid token'
+      error_response.data = []
+      error_response.message = err.name
       error_response.status = 403
       return res.json(error_response);
     }
     // Handle other unexpected errors
-    error_response.data = ''
-    error_response.message = 'Internal Server Error'
+    error_response.data = []
+    error_response.message = err
     error_response.status = 500
     res.status(500).json(error_response);
     }
