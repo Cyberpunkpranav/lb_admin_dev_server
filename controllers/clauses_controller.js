@@ -24,10 +24,10 @@ export const Create_clause = async(req,res,next)=>{
     }
   }))
 }
-
 export const Get_Clauses = (req,res,next)=>{
     const limit = Number(req.query.limit)
     const offset = Number(req.query.offset)
+    const user_id = Number (req.query.user_id)
     let query;
     if(req.query.search !=undefined){
      query = `SELECT * from public_clauses WHERE clause_name LIKE "%${req.query.search}%" ORDER BY clause_name LIMIT ? OFFSET ? `
@@ -42,7 +42,7 @@ export const Get_Clauses = (req,res,next)=>{
         }
     }))
     }else{
-        query = `SELECT * from public_clauses ORDER BY id LIMIT ? OFFSET ? `
+        query = `SELECT * from public_clauses ORDER BY clause_name LIMIT ? OFFSET ? `
         db.query(query,[limit,offset],((err,result)=>{
             if(err){
                 next(err)
@@ -56,7 +56,6 @@ export const Get_Clauses = (req,res,next)=>{
     }
 
 }
-
 export const Get_Clause_by_Id = async (req,res,next)=>{
         const id = Number(req.query.id)
         const query = `SELECT * FROM public_clauses WHERE id = ?`
@@ -119,7 +118,6 @@ export const Get_clause_alt_ctgry_by_id=(req,res,next)=>{
     res.json(response_data)
   }
 }
-
 export const Update_Clause = async (req,res,next) => {
     const Id = Number(req.body.id);
     const clause_name = req.body.clause_name;

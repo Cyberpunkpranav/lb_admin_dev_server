@@ -3,6 +3,7 @@ import cors from 'cors'
 import path from 'path'
 import dotenv from 'dotenv'
 import bodyParser from 'body-parser'
+import Admin_Utils from './routes/utils_routes.js'
 import Admin_clausekeywords from './routes/clause_keywords_routes.js'
 import Admin_mailer from './routes/mail_routes.js'
 import Admin_Auth from './routes/auth_routes.js'
@@ -39,6 +40,7 @@ app.use('/api/admin/services',Admin_Services_routes)
 app.use('/api/admin',Admin_Users)
 app.use('/api/admin/protocols',Admin_mailer)
 app.use('/api/admin/features',Admin_clausekeywords)
+app.use('/api/utils',Admin_Utils)
 
 // app.get('/non_user_auth',Non_userAccess)
 

@@ -11,5 +11,4 @@ router.put('/clause/keyword/update/:id',verifyToken,Update_keyword)
 router.get('/clause/clause_alternates/keyword_combinations',verifyToken,Get_Clause_keywordCombinations_by_id)
 router.post('/clause/clause_alternates/keyword_combinations/add',verifyToken,Add_Clause_keywordCombinations_by_id)
 router.post('/clause/clause_alternates/keyword_combinations/update',verifyToken,Update_Clause_keywordCombinations_by_id)
-
 export default router
